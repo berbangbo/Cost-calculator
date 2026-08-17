@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Cost Calculator</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="app">
+<header><h1>🔧 Cost Calculator</h1><p>คำนวณต้นทุนงานช่าง</p></header>
+
+<section class="card">
+  <div class="bar"><h2>วัสดุ</h2><button id="add">＋ เพิ่มวัสดุ</button></div>
+  <div id="materials"></div>
+</section>
+
+<section class="card">
+  <h2>ค่าแรง</h2>
+  <div class="labor-grid">
+    <label>ความยาก
+      <select id="difficulty">
+        <option value="1">1 - ง่าย</option><option value="2">2</option>
+        <option value="3" selected>3 - ปานกลาง</option><option value="4">4</option>
+        <option value="5">5 - ยาก</option>
+      </select>
+    </label>
+    <label>ค่าแรง (บาท)<input id="labor" type="number" value="300" min="0"></label>
+  </div>
+</section>
+
+<section class="card">
+  <h2>ราคาขาย</h2>
+  <input id="selling" type="number" min="0" placeholder="เช่น 3500">
+</section>
+
+<section class="summary">
+  <div>วัสดุ<strong id="mat">฿0.00</strong></div>
+  <div>ค่าแรง<strong id="lab">฿300.00</strong></div>
+  <div class="dark">ต้นทุนรวม<strong id="total">฿300.00</strong></div>
+  <div class="profit">กำไร<strong id="profit">฿-300.00</strong></div>
+</section>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
