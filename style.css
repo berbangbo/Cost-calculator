@@ -23,9 +23,13 @@ input,select{width:100%;margin-top:4px;border:1px solid #d5d5d5;border-radius:9p
 @media(max-width:520px){.grid3{grid-template-columns:1fr 1fr}.grid3 label:last-child{grid-column:1/-1}}
 @media print {
   button,
-  input,
   select {
     display: none !important;
+  }
+
+  input {
+    border: none !important;
+    background: transparent !important;
   }
 
   body {
