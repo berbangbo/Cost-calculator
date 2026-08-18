@@ -473,20 +473,36 @@ function renumberDetailBoxes(){
 }
 
 
-// ปุ่มเพิ่มหน้า
-addDetailBtn.addEventListener(
-  'click',
-  () => {
+// =========================
+// ADD DETAIL PAGE BUTTON
+// =========================
+
+if(detailBoxes && addDetailBtn){
+
+  addDetailBtn.onclick = function(){
+
+    addDetailBox();
+
+  };
+
+}
+
+
+// =========================
+// เริ่มต้น 1 หน้า
+// =========================
+
+if(detailBoxes){
+
+  if(
+    detailBoxes.querySelectorAll('.detail-box').length === 0
+  ){
 
     addDetailBox();
 
   }
-);
 
-
-// เริ่มต้น 1 หน้า
-addDetailBox();
-
+}
 // =========================
 // PDF EXPORT
 // =========================
