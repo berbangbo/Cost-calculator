@@ -21,3 +21,18 @@ input,select{width:100%;margin-top:4px;border:1px solid #d5d5d5;border-radius:9p
 .summary strong{display:block;font-size:20px;margin-top:4px}
 .summary .dark{background:#202124;color:#fff}.summary .profit{background:#fff0df}
 @media(max-width:520px){.grid3{grid-template-columns:1fr 1fr}.grid3 label:last-child{grid-column:1/-1}}
+@media print {
+  button,
+  input,
+  select {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+  }
+
+  .material {
+    break-inside: avoid;
+  }
+}
