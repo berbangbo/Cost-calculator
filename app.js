@@ -300,82 +300,611 @@ document.getElementById('difficulty')
 
 
 // =========================
-// PDF / PRINT
+// PDF EXPORT
 // =========================
 
-const pdfBtn =
-  document.createElement('button');
-
+const pdfBtn = document.createElement('button');
 
 pdfBtn.type = 'button';
-
-pdfBtn.textContent =
-  '📄 บันทึกเป็น PDF';
-
-pdfBtn.style.marginTop =
-  '10px';
+pdfBtn.textContent = '📄 บันทึกเป็น PDF';
+pdfBtn.style.marginTop = '10px';
 
 document.body.appendChild(pdfBtn);
 
 
-pdfBtn.addEventListener('click',()=>{
+pdfBtn.addEventListener('click', async () => {
 
-  // ทำให้ค่าที่กรอกใน input ติดไปกับ Print
-  document.querySelectorAll('input')
-    .forEach(input=>{
-      input.setAttribute(
-        'value',
-        input.value
+  // ตรวจสอบ library
+  if (!window.html2canvas || !window.jspdf) {
+    alert('ระบบ PDF ยังโหลดไม่เสร็จ กรุณาลองใหม่อีกครั้ง');
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+
+  // -------------------------
+  // ข้อมูลพื้นฐาน
+  // -------------------------
+
+  const jobName =
+    document.getElementById('jobName').value.trim() || 'ไม่มีชื่อชิ้นงาน';
+
+  const detail =
+    document.getElementById('jobDetail').value.trim() || '-';
+
+  const date =
+    new Date().toLocaleDateString('th-TH', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+
+
+  // -------------------------
+  // ดึงข้อมูลวัสดุ
+  // -------------------------
+
+  const materials = [];
+
+  M.querySelectorAll('.material').forEach(el => {
+
+    const name =
+      el.querySelector('.name').value || '-';
+
+    const type =
+      el.querySelector('.type').value;
+
+    const price =
+      +el.querySelector('.price').value || 0;
+
+    const qty =
+      +el.querySelector('.qty').value || 0;
+
+    const s1 =
+      +el.querySelector('.s1').value || 0;
+
+    const s2 =
+      +el.querySelector('.s2').value || 0;
+
+    const cost =
+      el.querySelector('.cost').textContent;
+
+
+    let typeText = 'ต่อชิ้น / หน่วย';
+
+    if (type === 'length')
+      typeText = 'ต่อเมตร';
+
+    if (type === 'area')
+      typeText = 'ตามพื้นที่';
+
+
+    let useText = qty;
+
+    if (type === 'length') {
+      useText = qty + ' ม.';
+    }
+
+    if (type === 'area') {
+      useText = qty.toLocaleString('th-TH') + ' ตร.ซม.';
+    }
+
+
+    materials.push({
+      name,
+      typeText,
+      price,
+      useText,
+      cost
+    });
+
+  });
+
+
+  // -------------------------
+  // สร้าง HTML สำหรับ PDF
+  // -------------------------
+
+  const report = document.createElement('div');
+
+  report.style.position = 'fixed';
+  report.style.left = '-10000px';
+  report.style.top = '0';
+
+  report.style.width = '794px';
+
+  report.style.background = '#ffffff';
+  report.style.color = '#202124';
+
+  report.style.padding = '50px';
+
+  report.style.fontFamily =
+    '-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif';
+
+  report.style.fontSize = '16px';
+
+  report.style.lineHeight = '1.55';
+
+
+  // -------------------------
+  // รูปงาน
+  // -------------------------
+
+  let imageHTML = '';
+
+  if (jobImageData) {
+
+    imageHTML = `
+      <img
+        src="${jobImageData}"
+        style="
+          width:100%;
+          max-height:300px;
+          object-fit:contain;
+          border-radius:12px;
+          border:1px solid #ddd;
+          background:#f5f5f5;
+        "
+      >
+    `;
+
+  } else {
+
+    imageHTML = `
+      <div style="
+        height:180px;
+        border:1px dashed #bbb;
+        border-radius:12px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        color:#999;
+      ">
+        ไม่มีรูปงาน
+      </div>
+    `;
+
+  }
+
+
+  // -------------------------
+  // รายการวัสดุ
+  // -------------------------
+
+  let materialRows = '';
+
+  materials.forEach(item => {
+
+    materialRows += `
+      <tr>
+
+        <td style="
+          padding:10px;
+          border-bottom:1px solid #ddd;
+        ">
+          ${escapeHTML(item.name)}
+        </td>
+
+        <td style="
+          padding:10px;
+          border-bottom:1px solid #ddd;
+          text-align:center;
+        ">
+          ${item.typeText}
+        </td>
+
+        <td style="
+          padding:10px;
+          border-bottom:1px solid #ddd;
+          text-align:center;
+        ">
+          ${item.useText}
+        </td>
+
+        <td style="
+          padding:10px;
+          border-bottom:1px solid #ddd;
+          text-align:right;
+          font-weight:600;
+        ">
+          ${item.cost}
+        </td>
+
+      </tr>
+    `;
+
+  });
+
+
+  // -------------------------
+  // HTML ทั้งรายงาน
+  // -------------------------
+
+  report.innerHTML = `
+
+    <div style="
+      border-bottom:4px solid #202124;
+      padding-bottom:18px;
+      margin-bottom:24px;
+    ">
+
+      <div style="
+        font-size:30px;
+        font-weight:800;
+      ">
+        🔧 Cost Calculator
+      </div>
+
+      <div style="
+        color:#777;
+        margin-top:3px;
+      ">
+        สรุปต้นทุนงานช่าง
+      </div>
+
+    </div>
+
+
+    <div style="
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      margin-bottom:20px;
+    ">
+
+      <div>
+
+        <div style="
+          color:#777;
+          font-size:14px;
+        ">
+          ชื่องาน
+        </div>
+
+        <div style="
+          font-size:26px;
+          font-weight:800;
+        ">
+          ${escapeHTML(jobName)}
+        </div>
+
+      </div>
+
+
+      <div style="
+        text-align:right;
+        color:#666;
+        font-size:14px;
+      ">
+        วันที่<br>
+        ${date}
+      </div>
+
+    </div>
+
+
+    <div style="
+      display:grid;
+      grid-template-columns:42% 58%;
+      gap:20px;
+      margin-bottom:28px;
+    ">
+
+      <div>
+        ${imageHTML}
+      </div>
+
+
+      <div>
+
+        <div style="
+          font-size:18px;
+          font-weight:800;
+          margin-bottom:8px;
+        ">
+          รายละเอียดงาน
+        </div>
+
+        <div style="
+          white-space:pre-wrap;
+          border:1px solid #ddd;
+          border-radius:12px;
+          padding:14px;
+          min-height:180px;
+          background:#fafafa;
+        ">
+          ${escapeHTML(detail)}
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div style="
+      font-size:20px;
+      font-weight:800;
+      margin-bottom:10px;
+    ">
+      วัสดุ
+    </div>
+
+
+    <table style="
+      width:100%;
+      border-collapse:collapse;
+      font-size:14px;
+      margin-bottom:24px;
+    ">
+
+      <thead>
+
+        <tr style="
+          background:#202124;
+          color:white;
+        ">
+
+          <th style="
+            padding:10px;
+            text-align:left;
+          ">
+            วัสดุ
+          </th>
+
+          <th style="
+            padding:10px;
+            text-align:center;
+          ">
+            วิธีคิด
+          </th>
+
+          <th style="
+            padding:10px;
+            text-align:center;
+          ">
+            ใช้ไป
+          </th>
+
+          <th style="
+            padding:10px;
+            text-align:right;
+          ">
+            ต้นทุน
+          </th>
+
+        </tr>
+
+      </thead>
+
+      <tbody>
+        ${materialRows}
+      </tbody>
+
+    </table>
+
+
+    <div style="
+      display:flex;
+      justify-content:flex-end;
+    ">
+
+      <div style="
+        width:330px;
+        border-top:2px solid #202124;
+        padding-top:12px;
+      ">
+
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          padding:5px 0;
+        ">
+          <span>วัสดุ</span>
+          <strong>${document.getElementById('mat').textContent}</strong>
+        </div>
+
+
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          padding:5px 0;
+        ">
+          <span>ค่าแรง</span>
+          <strong>${document.getElementById('lab').textContent}</strong>
+        </div>
+
+
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          padding:9px 0;
+          margin-top:4px;
+          border-top:1px solid #ddd;
+          font-size:18px;
+        ">
+          <strong>ต้นทุนรวม</strong>
+          <strong>${document.getElementById('total').textContent}</strong>
+        </div>
+
+
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          padding:9px 0;
+        ">
+          <strong>ราคาขาย</strong>
+          <strong>${money(document.getElementById('selling').value)}</strong>
+        </div>
+
+
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          padding:12px;
+          margin-top:5px;
+          border-radius:10px;
+          background:#202124;
+          color:#fff;
+          font-size:20px;
+        ">
+          <strong>กำไร</strong>
+          <strong>${document.getElementById('profit').textContent}</strong>
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div style="
+      margin-top:30px;
+      padding-top:10px;
+      border-top:1px solid #ddd;
+      color:#999;
+      font-size:11px;
+    ">
+      Cost Calculator • บันทึกต้นทุนงานช่างส่วนตัว
+    </div>
+
+  `;
+
+
+  document.body.appendChild(report);
+
+
+  // -------------------------
+  // สร้าง PDF
+  // -------------------------
+
+  try {
+
+    const canvas =
+      await html2canvas(report, {
+        scale:2,
+        useCORS:true,
+        backgroundColor:'#ffffff'
+      });
+
+
+    const imgData =
+      canvas.toDataURL('image/jpeg',0.95);
+
+
+    const pdf =
+      new jsPDF({
+        orientation:'portrait',
+        unit:'mm',
+        format:'a4',
+        compress:true
+      });
+
+
+    const pageWidth = 210;
+
+    const pageHeight = 297;
+
+    const margin = 10;
+
+    const usableWidth =
+      pageWidth - margin * 2;
+
+    const imgWidth =
+      usableWidth;
+
+    const imgHeight =
+      canvas.height *
+      imgWidth /
+      canvas.width;
+
+
+    let heightLeft = imgHeight;
+
+    let position = margin;
+
+
+    pdf.addImage(
+      imgData,
+      'JPEG',
+      margin,
+      position,
+      imgWidth,
+      imgHeight
+    );
+
+
+    heightLeft -=
+      pageHeight - margin * 2;
+
+
+    while(heightLeft > 0){
+
+      position =
+        heightLeft -
+        imgHeight +
+        margin;
+
+      pdf.addPage();
+
+      pdf.addImage(
+        imgData,
+        'JPEG',
+        margin,
+        position,
+        imgWidth,
+        imgHeight
       );
-    });
+
+      heightLeft -=
+        pageHeight - margin * 2;
+
+    }
 
 
-  // ทำให้ค่าที่เลือกใน select ติดไปกับ Print
-  document.querySelectorAll('select')
-    .forEach(select=>{
+    // -------------------------
+    // ชื่อไฟล์
+    // -------------------------
 
-      select.querySelectorAll('option')
-        .forEach(option=>{
-          option.removeAttribute('selected');
-        });
+    let fileName =
+      jobName
+        .replace(/[\\/:*?"<>|]/g,'')
+        .trim();
 
-
-      const selected =
-        select.querySelector(
-          `option[value="${select.value}"]`
-        );
+    if(!fileName)
+      fileName = 'งาน';
 
 
-      if(selected){
-        selected.setAttribute(
-          'selected',
-          ''
-        );
-      }
-
-    });
+    pdf.save(
+      `${fileName}.pdf`
+    );
 
 
-  // ทำให้ textarea ติดไปกับ Print
-  document.querySelectorAll('textarea')
-    .forEach(textarea=>{
+  } catch(error){
 
-      textarea.innerHTML =
-        textarea.value;
+    console.error(error);
 
-    });
+    alert(
+      'สร้าง PDF ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'
+    );
+
+  }
 
 
-  window.print();
+  report.remove();
 
 });
 
 
 // =========================
-// START
+// ป้องกัน HTML แปลก ๆ
 // =========================
 
-addMaterial();
-addMaterial();
+function escapeHTML(text){
 
-calc();
+  return String(text)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
+
+}
