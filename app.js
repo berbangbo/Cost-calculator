@@ -297,7 +297,195 @@ document.getElementById('difficulty')
     calc();
 
   });
+// =========================
+// DETAIL BOXES
+// =========================
 
+const detailBoxes =
+  document.getElementById('detailBoxes');
+
+const addDetailBtn =
+  document.getElementById('addDetail');
+
+
+// จำกัดความสูงของข้อความแต่ละหน้า
+// ถ้าเกิน จะไม่ยอมให้พิมพ์ตัวใหม่เพิ่ม
+function limitDetailText(textarea){
+
+  const oldValue = textarea.value;
+
+  // ปล่อยให้ browser คำนวณก่อน
+  requestAnimationFrame(() => {
+
+    if(
+      textarea.scrollHeight >
+      textarea.clientHeight
+    ){
+
+      let value =
+        textarea.value;
+
+      // ตัดตัวท้ายออกทีละตัว
+      while(
+        textarea.scrollHeight >
+        textarea.clientHeight &&
+        value.length > 0
+      ){
+
+        value =
+          value.slice(0,-1);
+
+        textarea.value =
+          value;
+
+        // บังคับให้ browser คำนวณใหม่
+        textarea.style.height =
+          textarea.style.height;
+
+      }
+
+    }
+
+    updateDetailCount(textarea);
+
+  });
+
+}
+
+
+// นับจำนวนตัวอักษร
+function updateDetailCount(textarea){
+
+  const box =
+    textarea.closest('.detail-box');
+
+  if(!box) return;
+
+  const count =
+    box.querySelector('.detail-count');
+
+  count.textContent =
+    `${textarea.value.length} ตัวอักษร`;
+
+}
+
+
+// เพิ่มกล่องรายละเอียด
+function addDetailBox(initialText=''){
+
+  const number =
+    detailBoxes.querySelectorAll(
+      '.detail-box'
+    ).length + 1;
+
+
+  const box =
+    document.createElement('div');
+
+  box.className =
+    'detail-box';
+
+
+  box.innerHTML = `
+
+    <div class="detail-box-head">
+
+      <div class="detail-box-title">
+        รายละเอียดหน้า ${number}
+      </div>
+
+      <button
+        type="button"
+        class="detail-delete"
+      >
+        ลบหน้า
+      </button>
+
+    </div>
+
+
+    <textarea
+      class="detail-text"
+      rows="20"
+      placeholder="ใส่รายละเอียดงาน..."
+    ></textarea>
+
+
+    <div class="detail-count">
+      0 ตัวอักษร
+    </div>
+
+  `;
+
+
+  const textarea =
+    box.querySelector('.detail-text');
+
+
+  textarea.value =
+    initialText;
+
+
+  textarea.addEventListener(
+    'input',
+    () => {
+
+      limitDetailText(textarea);
+
+    }
+  );
+
+
+  box.querySelector('.detail-delete')
+    .addEventListener(
+      'click',
+      () => {
+
+        box.remove();
+
+        renumberDetailBoxes();
+
+      }
+    );
+
+
+  detailBoxes.appendChild(box);
+
+  updateDetailCount(textarea);
+
+}
+
+
+// เรียงเลขหน้าใหม่
+function renumberDetailBoxes(){
+
+  detailBoxes
+    .querySelectorAll('.detail-box')
+    .forEach((box,index)=>{
+
+      box.querySelector(
+        '.detail-box-title'
+      ).textContent =
+        `รายละเอียดหน้า ${index + 1}`;
+
+    });
+
+}
+
+
+// ปุ่มเพิ่มหน้า
+addDetailBtn.addEventListener(
+  'click',
+  () => {
+
+    addDetailBox();
+
+  }
+);
+
+
+// เริ่มต้น 1 หน้า
+addDetailBox();
 
 // =========================
 // PDF EXPORT
@@ -441,10 +629,20 @@ pdfBtn.addEventListener('click', async () => {
       .trim() || 'ไม่มีชื่อชิ้นงาน';
 
 
-  const detail =
-    document.getElementById('jobDetail')
-      .value
-      .trim() || '-';
+  const detailPages = [];
+
+detailBoxes
+  .querySelectorAll('.detail-text')
+  .forEach(textarea => {
+
+    const text =
+      textarea.value.trim();
+
+    if(text){
+      detailPages.push(text);
+    }
+
+  });
 
 
   const date =
@@ -1033,245 +1231,89 @@ pdfBtn.addEventListener('click', async () => {
 
   `);
 
+// ==================================================
+// PAGE 3+
+// รายละเอียดงาน
+// 1 BOX = 1 PAGE
+// ==================================================
 
-  // ==================================================
-  // PAGE 3+
-  // รายละเอียดงาน
-  // แบ่งเป็น 2 แถวต่อหน้า
-  // ==================================================
+for(
+  let pageIndex = 0;
+  pageIndex < detailPages.length;
+  pageIndex++
+){
 
-
-  // แปลงรายละเอียดเป็นบรรทัด
-  const rawLines =
-    detail.split(/\r?\n/);
-
-
-  // แบ่งบรรทัดให้ประมาณพอดีกับความกว้าง
-  const wrappedLines = [];
-
-
-  rawLines.forEach(line => {
-
-    // ถ้าบรรทัดว่าง
-    if(line.trim() === ''){
-
-      wrappedLines.push('');
-
-      return;
-
-    }
+  const detailText =
+    detailPages[pageIndex];
 
 
-    // ประมาณ 65 ตัวอักษรต่อบรรทัด
-    let text = line;
+  await createPDFPage(pdf,`
 
-
-    while(text.length > 65){
-
-      wrappedLines.push(
-        text.substring(0,65)
-      );
-
-      text =
-        text.substring(65);
-
-    }
-
-
-    wrappedLines.push(text);
-
-  });
-
-
-  // 1 แถวประมาณ 20 บรรทัด
-  // 2 แถว = 40 บรรทัด / หน้า
-  const linesPerRow = 20;
-
-  const linesPerPage = 40;
-
-
-  // อย่างน้อย 1 หน้า
-  const totalDetailPages =
-    Math.max(
-      1,
-      Math.ceil(
-        wrappedLines.length /
-        linesPerPage
-      )
-    );
-
-
-  for(
-    let pageIndex = 0;
-    pageIndex < totalDetailPages;
-    pageIndex++
-  ){
-
-    const start =
-      pageIndex * linesPerPage;
-
-
-    const pageLines =
-      wrappedLines.slice(
-        start,
-        start + linesPerPage
-      );
-
-
-    const row1 =
-      pageLines.slice(
-        0,
-        linesPerRow
-      );
-
-
-    const row2 =
-      pageLines.slice(
-        linesPerRow,
-        linesPerPage
-      );
-
-
-    const makeRow = (lines) => {
-
-      if(lines.length === 0){
-
-        return `
-          <div style="
-            flex:1;
-            border:1px solid #ddd;
-            border-radius:16px;
-            background:#fafafa;
-          "></div>
-        `;
-
-      }
-
-
-      return `
-        <div style="
-          flex:1;
-          border:1px solid #ddd;
-          border-radius:16px;
-          background:#fafafa;
-          padding:18px;
-          white-space:pre-wrap;
-          font-size:15px;
-          line-height:1.65;
-          overflow:hidden;
-        ">
-          ${escapeHTML(lines.join('\n'))}
-        </div>
-      `;
-
-    };
-
-
-    await createPDFPage(pdf,`
+    <div style="
+      border-bottom:4px solid #202124;
+      padding-bottom:16px;
+      margin-bottom:22px;
+    ">
 
       <div style="
-        border-bottom:4px solid #202124;
-        padding-bottom:16px;
-        margin-bottom:22px;
+        font-size:28px;
+        font-weight:800;
       ">
-
-        <div style="
-          font-size:28px;
-          font-weight:800;
-        ">
-          รายละเอียดงาน
-        </div>
-
-        <div style="
-          color:#777;
-        ">
-          ${escapeHTML(jobName)}
-        </div>
-
+        รายละเอียดงาน
       </div>
-
 
       <div style="
-        display:flex;
-        flex-direction:column;
-        gap:18px;
-        height:940px;
+        color:#777;
+        margin-top:3px;
       ">
-
-
-        <!-- แถวที่ 1 -->
-
-        <div style="
-          flex:1;
-          display:flex;
-          flex-direction:column;
-        ">
-
-          <div style="
-            font-size:16px;
-            font-weight:800;
-            margin-bottom:7px;
-          ">
-            รายละเอียด
-          </div>
-
-          ${makeRow(row1)}
-
-        </div>
-
-
-        <!-- แถวที่ 2 -->
-
-        <div style="
-          flex:1;
-          display:flex;
-          flex-direction:column;
-        ">
-
-          <div style="
-            font-size:16px;
-            font-weight:800;
-            margin-bottom:7px;
-          ">
-            รายละเอียดต่อ
-          </div>
-
-          ${makeRow(row2)}
-
-        </div>
-
-
+        ${escapeHTML(jobName)}
       </div>
 
-
-      <div style="
-        position:absolute;
-        bottom:35px;
-        left:42px;
-        right:42px;
-        border-top:1px solid #ddd;
-        padding-top:8px;
-        color:#999;
-        font-size:11px;
-        display:flex;
-        justify-content:space-between;
-      ">
-
-        <span>
-          Cost Calculator • ${escapeHTML(jobName)}
-        </span>
-
-        <span>
-          รายละเอียดหน้า ${pageIndex + 1}
-        </span>
-
-      </div>
-
-    `);
-
-  }
+    </div>
 
 
+    <div style="
+      border:1px solid #d8d8d8;
+      border-radius:18px;
+      background:#fafafa;
+      padding:24px;
+      height:930px;
+      white-space:pre-wrap;
+      overflow:hidden;
+      font-size:16px;
+      line-height:1.65;
+    ">
+      ${escapeHTML(detailText)}
+    </div>
+
+
+    <div style="
+      position:absolute;
+      bottom:35px;
+      left:42px;
+      right:42px;
+      border-top:1px solid #ddd;
+      padding-top:8px;
+      color:#999;
+      font-size:11px;
+      display:flex;
+      justify-content:space-between;
+    ">
+
+      <span>
+        Cost Calculator • ${escapeHTML(jobName)}
+      </span>
+
+      <span>
+        รายละเอียดหน้า ${pageIndex + 1}
+      </span>
+
+    </div>
+
+  `);
+
+}
+  
   // ==================================================
   // SAVE
   // ==================================================
