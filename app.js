@@ -88,5 +88,27 @@ pdfBtn.style.marginTop = '10px';
 document.body.appendChild(pdfBtn);
 
 pdfBtn.addEventListener('click', () => {
+
+  // ทำให้ค่าที่กรอกในช่องต่าง ๆ ติดไปตอนพิมพ์ PDF
+  document.querySelectorAll('input').forEach(input => {
+    input.setAttribute('value', input.value);
+  });
+
+  // ทำให้ค่าที่เลือกในช่อง Select ติดไปตอนพิมพ์ PDF
+  document.querySelectorAll('select').forEach(select => {
+
+    select.querySelectorAll('option').forEach(option => {
+      option.removeAttribute('selected');
+    });
+
+    const selected = select.querySelector(
+      `option[value="${select.value}"]`
+    );
+
+    if (selected) {
+      selected.setAttribute('selected', '');
+    }
+  });
+
   window.print();
 });
