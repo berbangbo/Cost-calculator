@@ -24,11 +24,18 @@
       <input id="jobName" type="text" placeholder="เช่น แร็คข้าง CRF300L">
     </label>
 
-    <label>
-      รายละเอียดงาน
-      <textarea id="jobDetail" rows="4"
-        placeholder="รายละเอียดของงาน เช่น วัสดุที่ใช้ ลักษณะงาน สี หรือหมายเหตุ"></textarea>
-    </label>
+    <div class="detail-section">
+
+  <div class="bar">
+    <h2>รายละเอียดงาน</h2>
+    <button type="button" id="addDetail">
+      ＋ เพิ่มหน้ารายละเอียด
+    </button>
+  </div>
+
+  <div id="detailBoxes"></div>
+
+</div>
 
     <label>
       รูปงาน
