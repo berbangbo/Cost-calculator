@@ -1,49 +1,240 @@
-*{box-sizing:border-box}
-body{margin:0;background:#f3f4f6;color:#202124;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-.app{max-width:760px;margin:auto;padding:14px}
-header{background:#202124;color:#fff;border-radius:18px;padding:18px;margin-bottom:12px}
-h1{font-size:23px;margin:0 0 4px}header p{margin:0;color:#bbb}
-.card{background:#fff;border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 2px 10px #0000000d}
-.bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-h2{font-size:17px;margin:0 0 10px}
-button{border:0;border-radius:10px;padding:10px 13px;font-weight:700;font-size:14px;cursor:pointer;background:#202124;color:#fff}
-.material{border:1px solid #e1e1e1;border-radius:13px;padding:12px;margin-bottom:10px}
-.grid{display:grid;grid-template-columns:1.3fr 1fr;gap:8px}
-.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px}
-label{display:block;color:#666;font-size:12px}
-input,select{width:100%;margin-top:4px;border:1px solid #d5d5d5;border-radius:9px;padding:10px;background:#fff;font-size:15px}
-.costline{display:flex;justify-content:space-between;border-top:1px dashed #ddd;margin-top:10px;padding-top:9px;font-size:13px}
-.cost{font-size:17px;font-weight:800;color:#202124}
-.del{background:#eee;color:#555;padding:7px 10px;margin-top:7px}
-.labor-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.summary{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.summary>div{background:#fff;border-radius:13px;padding:13px;box-shadow:0 2px 10px #0000000d}
-.summary strong{display:block;font-size:20px;margin-top:4px}
-.summary .dark{background:#202124;color:#fff}.summary .profit{background:#fff0df}
-@media(max-width:520px){.grid3{grid-template-columns:1fr 1fr}.grid3 label:last-child{grid-column:1/-1}}
-@media print {
-  body {
-    background: white !important;
+*{
+  box-sizing:border-box
+}
+
+body{
+  margin:0;
+  background:#f3f4f6;
+  color:#202124;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif
+}
+
+.app{
+  max-width:760px;
+  margin:auto;
+  padding:14px
+}
+
+header{
+  background:#202124;
+  color:#fff;
+  border-radius:18px;
+  padding:18px;
+  margin-bottom:12px
+}
+
+h1{
+  font-size:23px;
+  margin:0 0 4px
+}
+
+header p{
+  margin:0;
+  color:#bbb
+}
+
+.card{
+  background:#fff;
+  border-radius:16px;
+  padding:14px;
+  margin-bottom:12px;
+  box-shadow:0 2px 10px #0000000d
+}
+
+.bar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:10px
+}
+
+h2{
+  font-size:17px;
+  margin:0 0 10px
+}
+
+button{
+  border:0;
+  border-radius:10px;
+  padding:10px 13px;
+  font-weight:700;
+  font-size:14px;
+  cursor:pointer;
+  background:#202124;
+  color:#fff
+}
+
+.material{
+  border:1px solid #e1e1e1;
+  border-radius:13px;
+  padding:12px;
+  margin-bottom:10px
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:1.3fr 1fr;
+  gap:8px
+}
+
+.grid3{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:8px;
+  margin-top:8px
+}
+
+label{
+  display:block;
+  color:#666;
+  font-size:12px;
+  margin-bottom:10px
+}
+
+input,
+select,
+textarea{
+  width:100%;
+  margin-top:4px;
+  border:1px solid #d5d5d5;
+  border-radius:9px;
+  padding:10px;
+  background:#fff;
+  font-size:15px;
+  font-family:inherit
+}
+
+textarea{
+  resize:vertical;
+  min-height:90px
+}
+
+.costline{
+  display:flex;
+  justify-content:space-between;
+  border-top:1px dashed #ddd;
+  margin-top:10px;
+  padding-top:9px;
+  font-size:13px
+}
+
+.cost{
+  font-size:17px;
+  font-weight:800;
+  color:#202124
+}
+
+.del{
+  background:#eee;
+  color:#555;
+  padding:7px 10px;
+  margin-top:7px
+}
+
+.labor-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px
+}
+
+.summary{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px
+}
+
+.summary>div{
+  background:#fff;
+  border-radius:13px;
+  padding:13px;
+  box-shadow:0 2px 10px #0000000d
+}
+
+.summary strong{
+  display:block;
+  font-size:20px;
+  margin-top:4px
+}
+
+.summary .dark{
+  background:#202124;
+  color:#fff
+}
+
+.summary .profit{
+  background:#fff0df
+}
+
+/* รูปตัวอย่าง */
+.image-preview{
+  margin-top:8px;
+  display:none
+}
+
+.image-preview img{
+  max-width:100%;
+  max-height:300px;
+  border-radius:12px;
+  object-fit:contain
+}
+
+@media(max-width:520px){
+
+  .grid3{
+    grid-template-columns:1fr 1fr
   }
 
-  button {
-    display: none !important;
+  .grid3 label:last-child{
+    grid-column:1/-1
   }
 
+}
+
+/* =========================
+   PRINT / PDF
+   ========================= */
+
+@media print{
+
+  body{
+    background:#fff !important
+  }
+
+  .app{
+    max-width:none;
+    padding:0
+  }
+
+  /* ซ่อนปุ่ม */
+  button{
+    display:none !important
+  }
+
+  /* ให้ input แสดงค่าที่กรอก */
   input,
-  select {
-    color: #000 !important;
-    background: white !important;
-    border: 1px solid #ddd !important;
+  select,
+  textarea{
+    color:#000 !important;
+    background:#fff !important;
+    border:1px solid #ddd !important;
+    box-shadow:none !important
   }
 
-  .material {
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
+  /* รูปงาน */
+  .image-preview{
+    display:block !important
   }
 
-  .card {
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
+  .image-preview img{
+    max-width:500px;
+    max-height:300px
   }
+
+  .material,
+  .card,
+  .summary>div{
+    break-inside:avoid !important;
+    page-break-inside:avoid !important
+  }
+
 }
