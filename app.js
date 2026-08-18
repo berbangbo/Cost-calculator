@@ -77,3 +77,16 @@ document.getElementById('difficulty').addEventListener('change',e=>{
  calc();
 });
 addMaterial(); addMaterial(); calc();
+// ===== PRINT / SAVE PDF =====
+
+const pdfBtn = document.createElement('button');
+
+pdfBtn.type = 'button';
+pdfBtn.textContent = '📄 บันทึกเป็น PDF';
+pdfBtn.style.marginTop = '10px';
+
+document.body.appendChild(pdfBtn);
+
+pdfBtn.addEventListener('click', () => {
+  window.print();
+});
