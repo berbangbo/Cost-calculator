@@ -312,153 +312,293 @@ pdfBtn.style.marginTop = '10px';
 document.body.appendChild(pdfBtn);
 
 
-pdfBtn.addEventListener('click', async () => {
+// =========================
+// ESCAPE HTML
+// =========================
 
-  // ตรวจสอบ library
-  if (!window.html2canvas || !window.jspdf) {
-    alert('ระบบ PDF ยังโหลดไม่เสร็จ กรุณาลองใหม่อีกครั้ง');
-    return;
-  }
-
-  const { jsPDF } = window.jspdf;
-
-  // -------------------------
-  // ข้อมูลพื้นฐาน
-  // -------------------------
-
-  const jobName =
-    document.getElementById('jobName').value.trim() || 'ไม่มีชื่อชิ้นงาน';
-
-  const detail =
-    document.getElementById('jobDetail').value.trim() || '-';
-
-  const date =
-    new Date().toLocaleDateString('th-TH', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
+function escapeHTML(text){
+  return String(text)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
+}
 
 
-  // -------------------------
-  // ดึงข้อมูลวัสดุ
-  // -------------------------
+// =========================
+// CREATE PDF PAGE
+// =========================
 
-  const materials = [];
+async function createPDFPage(pdf, content){
 
-  M.querySelectorAll('.material').forEach(el => {
+  const page = document.createElement('div');
 
-    const name =
-      el.querySelector('.name').value || '-';
+  page.style.position = 'fixed';
+  page.style.left = '-10000px';
+  page.style.top = '0';
 
-    const type =
-      el.querySelector('.type').value;
+  // A4 ประมาณ 96 DPI
+  page.style.width = '794px';
+  page.style.height = '1123px';
 
-    const price =
-      +el.querySelector('.price').value || 0;
+  page.style.background = '#ffffff';
+  page.style.color = '#202124';
 
-    const qty =
-      +el.querySelector('.qty').value || 0;
+  page.style.padding = '42px';
 
-    const s1 =
-      +el.querySelector('.s1').value || 0;
+  page.style.fontFamily =
+    '-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif';
 
-    const s2 =
-      +el.querySelector('.s2').value || 0;
+  page.style.fontSize = '15px';
+  page.style.lineHeight = '1.5';
 
-    const cost =
-      el.querySelector('.cost').textContent;
+  page.style.overflow = 'hidden';
 
+  page.innerHTML = content;
 
-    let typeText = 'ต่อชิ้น / หน่วย';
-
-    if (type === 'length')
-      typeText = 'ต่อเมตร';
-
-    if (type === 'area')
-      typeText = 'ตามพื้นที่';
+  document.body.appendChild(page);
 
 
-    let useText = qty;
+  // รอรูป
+  const images = page.querySelectorAll('img');
 
-    if (type === 'length') {
-      useText = qty + ' ม.';
-    }
+  await Promise.all(
+    [...images].map(img => {
 
-    if (type === 'area') {
-      useText = qty.toLocaleString('th-TH') + ' ตร.ซม.';
-    }
+      if(img.complete){
+        return Promise.resolve();
+      }
+
+      return new Promise(resolve => {
+        img.onload = resolve;
+        img.onerror = resolve;
+      });
+
+    })
+  );
 
 
-    materials.push({
-      name,
-      typeText,
-      price,
-      useText,
-      cost
-    });
-
+  const canvas = await html2canvas(page,{
+    scale:2,
+    useCORS:true,
+    backgroundColor:'#ffffff',
+    width:794,
+    height:1123,
+    windowWidth:794
   });
 
 
-  // -------------------------
-  // สร้าง HTML สำหรับ PDF
-  // -------------------------
-
-  const report = document.createElement('div');
-
-  report.style.position = 'fixed';
-  report.style.left = '-10000px';
-  report.style.top = '0';
-
-  report.style.width = '794px';
-
-  report.style.background = '#ffffff';
-  report.style.color = '#202124';
-
-  report.style.padding = '50px';
-
-  report.style.fontFamily =
-    '-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif';
-
-  report.style.fontSize = '16px';
-
-  report.style.lineHeight = '1.55';
+  const imgData =
+    canvas.toDataURL('image/jpeg',0.95);
 
 
-  // -------------------------
-  // รูปงาน
-  // -------------------------
+  if(pdf.getNumberOfPages() > 0){
+    pdf.addPage();
+  }
+
+
+  pdf.addImage(
+    imgData,
+    'JPEG',
+    10,
+    10,
+    190,
+    277
+  );
+
+
+  page.remove();
+}
+
+
+// =========================
+// PDF BUTTON
+// =========================
+
+pdfBtn.addEventListener('click', async () => {
+
+  if(!window.html2canvas || !window.jspdf){
+
+    alert(
+      'ระบบ PDF ยังโหลดไม่เสร็จ กรุณาลองใหม่อีกครั้ง'
+    );
+
+    return;
+  }
+
+
+  const { jsPDF } = window.jspdf;
+
+
+  // =========================
+  // ข้อมูลหลัก
+  // =========================
+
+  const jobName =
+    document.getElementById('jobName')
+      .value
+      .trim() || 'ไม่มีชื่อชิ้นงาน';
+
+
+  const detail =
+    document.getElementById('jobDetail')
+      .value
+      .trim() || '-';
+
+
+  const date =
+    new Date().toLocaleDateString(
+      'th-TH',
+      {
+        day:'2-digit',
+        month:'2-digit',
+        year:'numeric'
+      }
+    );
+
+
+  const selling =
+    +document.getElementById('selling').value || 0;
+
+
+  const mat =
+    document.getElementById('mat').textContent;
+
+
+  const lab =
+    document.getElementById('lab').textContent;
+
+
+  const total =
+    document.getElementById('total').textContent;
+
+
+  const profit =
+    document.getElementById('profit').textContent;
+
+
+  // =========================
+  // วัสดุ
+  // =========================
+
+  const materials = [];
+
+
+  M.querySelectorAll('.material')
+    .forEach(el => {
+
+      const name =
+        el.querySelector('.name')
+          .value || '-';
+
+
+      const type =
+        el.querySelector('.type').value;
+
+
+      const qty =
+        +el.querySelector('.qty').value || 0;
+
+
+      let typeText =
+        'ต่อชิ้น / หน่วย';
+
+
+      let useText =
+        qty;
+
+
+      if(type === 'length'){
+
+        typeText = 'ต่อเมตร';
+
+        useText =
+          qty.toLocaleString('th-TH') + ' ม.';
+
+      }
+
+
+      if(type === 'area'){
+
+        typeText = 'ตามพื้นที่';
+
+        useText =
+          qty.toLocaleString('th-TH') + ' ตร.ซม.';
+
+      }
+
+
+      materials.push({
+
+        name,
+        typeText,
+        useText,
+
+        cost:
+          el.querySelector('.cost')
+            .textContent
+
+      });
+
+    });
+
+
+  // =========================
+  // PDF
+  // =========================
+
+  const pdf =
+    new jsPDF({
+
+      orientation:'portrait',
+
+      unit:'mm',
+
+      format:'a4',
+
+      compress:true
+
+    });
+
+
+  // ==================================================
+  // PAGE 1
+  // ภาพรวมงาน
+  // ==================================================
 
   let imageHTML = '';
 
-  if (jobImageData) {
+
+  if(jobImageData){
 
     imageHTML = `
       <img
         src="${jobImageData}"
         style="
           width:100%;
-          max-height:300px;
+          height:360px;
           object-fit:contain;
-          border-radius:12px;
+          border-radius:18px;
           border:1px solid #ddd;
           background:#f5f5f5;
         "
       >
     `;
 
-  } else {
+  }else{
 
     imageHTML = `
       <div style="
-        height:180px;
-        border:1px dashed #bbb;
-        border-radius:12px;
+        width:100%;
+        height:360px;
+        border:2px dashed #ccc;
+        border-radius:18px;
         display:flex;
         align-items:center;
         justify-content:center;
         color:#999;
+        font-size:18px;
       ">
         ไม่มีรูปงาน
       </div>
@@ -467,65 +607,12 @@ pdfBtn.addEventListener('click', async () => {
   }
 
 
-  // -------------------------
-  // รายการวัสดุ
-  // -------------------------
-
-  let materialRows = '';
-
-  materials.forEach(item => {
-
-    materialRows += `
-      <tr>
-
-        <td style="
-          padding:10px;
-          border-bottom:1px solid #ddd;
-        ">
-          ${escapeHTML(item.name)}
-        </td>
-
-        <td style="
-          padding:10px;
-          border-bottom:1px solid #ddd;
-          text-align:center;
-        ">
-          ${item.typeText}
-        </td>
-
-        <td style="
-          padding:10px;
-          border-bottom:1px solid #ddd;
-          text-align:center;
-        ">
-          ${item.useText}
-        </td>
-
-        <td style="
-          padding:10px;
-          border-bottom:1px solid #ddd;
-          text-align:right;
-          font-weight:600;
-        ">
-          ${item.cost}
-        </td>
-
-      </tr>
-    `;
-
-  });
-
-
-  // -------------------------
-  // HTML ทั้งรายงาน
-  // -------------------------
-
-  report.innerHTML = `
+  await createPDFPage(pdf,`
 
     <div style="
       border-bottom:4px solid #202124;
-      padding-bottom:18px;
-      margin-bottom:24px;
+      padding-bottom:16px;
+      margin-bottom:28px;
     ">
 
       <div style="
@@ -537,7 +624,7 @@ pdfBtn.addEventListener('click', async () => {
 
       <div style="
         color:#777;
-        margin-top:3px;
+        font-size:15px;
       ">
         สรุปต้นทุนงานช่าง
       </div>
@@ -548,8 +635,7 @@ pdfBtn.addEventListener('click', async () => {
     <div style="
       display:flex;
       justify-content:space-between;
-      align-items:flex-start;
-      margin-bottom:20px;
+      margin-bottom:24px;
     ">
 
       <div>
@@ -562,7 +648,7 @@ pdfBtn.addEventListener('click', async () => {
         </div>
 
         <div style="
-          font-size:26px;
+          font-size:30px;
           font-weight:800;
         ">
           ${escapeHTML(jobName)}
@@ -574,57 +660,219 @@ pdfBtn.addEventListener('click', async () => {
       <div style="
         text-align:right;
         color:#666;
-        font-size:14px;
       ">
+
         วันที่<br>
-        ${date}
+
+        <strong>
+          ${date}
+        </strong>
+
       </div>
 
     </div>
 
 
+    <!-- รูปงาน -->
+
     <div style="
-      display:grid;
-      grid-template-columns:42% 58%;
-      gap:20px;
       margin-bottom:28px;
     ">
 
-      <div>
-        ${imageHTML}
+      ${imageHTML}
+
+    </div>
+
+
+    <!-- สรุปราคา -->
+
+    <div style="
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:16px;
+    ">
+
+
+      <div style="
+        border:1px solid #ddd;
+        border-radius:16px;
+        padding:20px;
+      ">
+
+        <div style="
+          color:#777;
+          font-size:14px;
+        ">
+          ต้นทุนรวม
+        </div>
+
+        <div style="
+          font-size:28px;
+          font-weight:800;
+          margin-top:6px;
+        ">
+          ${total}
+        </div>
+
       </div>
 
 
-      <div>
+      <div style="
+        border:1px solid #ddd;
+        border-radius:16px;
+        padding:20px;
+      ">
 
         <div style="
-          font-size:18px;
+          color:#777;
+          font-size:14px;
+        ">
+          ราคาขาย
+        </div>
+
+        <div style="
+          font-size:28px;
           font-weight:800;
-          margin-bottom:8px;
+          margin-top:6px;
         ">
-          รายละเอียดงาน
+          ${money(selling)}
+        </div>
+
+      </div>
+
+
+      <div style="
+        grid-column:1/-1;
+        background:#202124;
+        color:#fff;
+        border-radius:16px;
+        padding:22px;
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+      ">
+
+        <div style="
+          font-size:22px;
+          font-weight:700;
+        ">
+          กำไร
         </div>
 
         <div style="
-          white-space:pre-wrap;
-          border:1px solid #ddd;
-          border-radius:12px;
-          padding:14px;
-          min-height:180px;
-          background:#fafafa;
+          font-size:30px;
+          font-weight:800;
         ">
-          ${escapeHTML(detail)}
+          ${profit}
         </div>
 
+      </div>
+
+
+    </div>
+
+
+    <div style="
+      position:absolute;
+      bottom:35px;
+      left:42px;
+      right:42px;
+      border-top:1px solid #ddd;
+      padding-top:8px;
+      color:#999;
+      font-size:11px;
+    ">
+      Cost Calculator • บันทึกต้นทุนงานช่างส่วนตัว
+    </div>
+
+  `);
+
+
+  // ==================================================
+  // PAGE 2
+  // วัสดุ + ต้นทุน
+  // ==================================================
+
+
+  let materialRows = '';
+
+
+  materials.forEach(item => {
+
+    materialRows += `
+
+      <tr>
+
+        <td style="
+          padding:13px 10px;
+          border-bottom:1px solid #ddd;
+        ">
+          ${escapeHTML(item.name)}
+        </td>
+
+
+        <td style="
+          padding:13px 10px;
+          border-bottom:1px solid #ddd;
+          text-align:center;
+        ">
+          ${item.typeText}
+        </td>
+
+
+        <td style="
+          padding:13px 10px;
+          border-bottom:1px solid #ddd;
+          text-align:center;
+        ">
+          ${item.useText}
+        </td>
+
+
+        <td style="
+          padding:13px 10px;
+          border-bottom:1px solid #ddd;
+          text-align:right;
+          font-weight:700;
+        ">
+          ${item.cost}
+        </td>
+
+      </tr>
+
+    `;
+
+  });
+
+
+  await createPDFPage(pdf,`
+
+    <div style="
+      border-bottom:4px solid #202124;
+      padding-bottom:16px;
+      margin-bottom:28px;
+    ">
+
+      <div style="
+        font-size:28px;
+        font-weight:800;
+      ">
+        ต้นทุนงาน
+      </div>
+
+      <div style="
+        color:#777;
+      ">
+        ${escapeHTML(jobName)}
       </div>
 
     </div>
 
 
     <div style="
-      font-size:20px;
+      font-size:22px;
       font-weight:800;
-      margin-bottom:10px;
+      margin-bottom:12px;
     ">
       วัสดุ
     </div>
@@ -634,39 +882,39 @@ pdfBtn.addEventListener('click', async () => {
       width:100%;
       border-collapse:collapse;
       font-size:14px;
-      margin-bottom:24px;
+      margin-bottom:35px;
     ">
 
       <thead>
 
         <tr style="
           background:#202124;
-          color:white;
+          color:#fff;
         ">
 
           <th style="
-            padding:10px;
+            padding:12px;
             text-align:left;
           ">
             วัสดุ
           </th>
 
           <th style="
-            padding:10px;
+            padding:12px;
             text-align:center;
           ">
             วิธีคิด
           </th>
 
           <th style="
-            padding:10px;
+            padding:12px;
             text-align:center;
           ">
             ใช้ไป
           </th>
 
           <th style="
-            padding:10px;
+            padding:12px;
             text-align:right;
           ">
             ต้นทุน
@@ -676,235 +924,370 @@ pdfBtn.addEventListener('click', async () => {
 
       </thead>
 
+
       <tbody>
+
         ${materialRows}
+
       </tbody>
 
     </table>
 
 
     <div style="
-      display:flex;
-      justify-content:flex-end;
+      margin-left:auto;
+      width:390px;
+      border-top:3px solid #202124;
+      padding-top:14px;
     ">
 
+
       <div style="
-        width:330px;
-        border-top:2px solid #202124;
-        padding-top:12px;
+        display:flex;
+        justify-content:space-between;
+        padding:9px 0;
       ">
 
-        <div style="
-          display:flex;
-          justify-content:space-between;
-          padding:5px 0;
-        ">
-          <span>วัสดุ</span>
-          <strong>${document.getElementById('mat').textContent}</strong>
-        </div>
+        <span>วัสดุ</span>
 
-
-        <div style="
-          display:flex;
-          justify-content:space-between;
-          padding:5px 0;
-        ">
-          <span>ค่าแรง</span>
-          <strong>${document.getElementById('lab').textContent}</strong>
-        </div>
-
-
-        <div style="
-          display:flex;
-          justify-content:space-between;
-          padding:9px 0;
-          margin-top:4px;
-          border-top:1px solid #ddd;
-          font-size:18px;
-        ">
-          <strong>ต้นทุนรวม</strong>
-          <strong>${document.getElementById('total').textContent}</strong>
-        </div>
-
-
-        <div style="
-          display:flex;
-          justify-content:space-between;
-          padding:9px 0;
-        ">
-          <strong>ราคาขาย</strong>
-          <strong>${money(document.getElementById('selling').value)}</strong>
-        </div>
-
-
-        <div style="
-          display:flex;
-          justify-content:space-between;
-          padding:12px;
-          margin-top:5px;
-          border-radius:10px;
-          background:#202124;
-          color:#fff;
-          font-size:20px;
-        ">
-          <strong>กำไร</strong>
-          <strong>${document.getElementById('profit').textContent}</strong>
-        </div>
+        <strong>${mat}</strong>
 
       </div>
+
+
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        padding:9px 0;
+      ">
+
+        <span>ค่าแรง</span>
+
+        <strong>${lab}</strong>
+
+      </div>
+
+
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        padding:12px 0;
+        border-top:1px solid #ddd;
+        font-size:20px;
+      ">
+
+        <strong>ต้นทุนรวม</strong>
+
+        <strong>${total}</strong>
+
+      </div>
+
+
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        padding:10px 0;
+      ">
+
+        <strong>ราคาขาย</strong>
+
+        <strong>${money(selling)}</strong>
+
+      </div>
+
+
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        background:#202124;
+        color:#fff;
+        border-radius:12px;
+        padding:16px;
+        margin-top:8px;
+        font-size:22px;
+      ">
+
+        <strong>กำไร</strong>
+
+        <strong>${profit}</strong>
+
+      </div>
+
 
     </div>
 
 
     <div style="
-      margin-top:30px;
-      padding-top:10px;
+      position:absolute;
+      bottom:35px;
+      left:42px;
+      right:42px;
       border-top:1px solid #ddd;
+      padding-top:8px;
       color:#999;
       font-size:11px;
     ">
-      Cost Calculator • บันทึกต้นทุนงานช่างส่วนตัว
+      Cost Calculator • ${escapeHTML(jobName)}
     </div>
 
-  `;
+  `);
 
 
-  document.body.appendChild(report);
+  // ==================================================
+  // PAGE 3+
+  // รายละเอียดงาน
+  // แบ่งเป็น 2 แถวต่อหน้า
+  // ==================================================
 
 
-  // -------------------------
-  // สร้าง PDF
-  // -------------------------
-
-  try {
-
-    const canvas =
-      await html2canvas(report, {
-        scale:2,
-        useCORS:true,
-        backgroundColor:'#ffffff'
-      });
+  // แปลงรายละเอียดเป็นบรรทัด
+  const rawLines =
+    detail.split(/\r?\n/);
 
 
-    const imgData =
-      canvas.toDataURL('image/jpeg',0.95);
+  // แบ่งบรรทัดให้ประมาณพอดีกับความกว้าง
+  const wrappedLines = [];
 
 
-    const pdf =
-      new jsPDF({
-        orientation:'portrait',
-        unit:'mm',
-        format:'a4',
-        compress:true
-      });
+  rawLines.forEach(line => {
 
+    // ถ้าบรรทัดว่าง
+    if(line.trim() === ''){
 
-    const pageWidth = 210;
+      wrappedLines.push('');
 
-    const pageHeight = 297;
-
-    const margin = 10;
-
-    const usableWidth =
-      pageWidth - margin * 2;
-
-    const imgWidth =
-      usableWidth;
-
-    const imgHeight =
-      canvas.height *
-      imgWidth /
-      canvas.width;
-
-
-    let heightLeft = imgHeight;
-
-    let position = margin;
-
-
-    pdf.addImage(
-      imgData,
-      'JPEG',
-      margin,
-      position,
-      imgWidth,
-      imgHeight
-    );
-
-
-    heightLeft -=
-      pageHeight - margin * 2;
-
-
-    while(heightLeft > 0){
-
-      position =
-        heightLeft -
-        imgHeight +
-        margin;
-
-      pdf.addPage();
-
-      pdf.addImage(
-        imgData,
-        'JPEG',
-        margin,
-        position,
-        imgWidth,
-        imgHeight
-      );
-
-      heightLeft -=
-        pageHeight - margin * 2;
+      return;
 
     }
 
 
-    // -------------------------
-    // ชื่อไฟล์
-    // -------------------------
-
-    let fileName =
-      jobName
-        .replace(/[\\/:*?"<>|]/g,'')
-        .trim();
-
-    if(!fileName)
-      fileName = 'งาน';
+    // ประมาณ 65 ตัวอักษรต่อบรรทัด
+    let text = line;
 
 
-    pdf.save(
-      `${fileName}.pdf`
+    while(text.length > 65){
+
+      wrappedLines.push(
+        text.substring(0,65)
+      );
+
+      text =
+        text.substring(65);
+
+    }
+
+
+    wrappedLines.push(text);
+
+  });
+
+
+  // 1 แถวประมาณ 20 บรรทัด
+  // 2 แถว = 40 บรรทัด / หน้า
+  const linesPerRow = 20;
+
+  const linesPerPage = 40;
+
+
+  // อย่างน้อย 1 หน้า
+  const totalDetailPages =
+    Math.max(
+      1,
+      Math.ceil(
+        wrappedLines.length /
+        linesPerPage
+      )
     );
 
 
-  } catch(error){
+  for(
+    let pageIndex = 0;
+    pageIndex < totalDetailPages;
+    pageIndex++
+  ){
 
-    console.error(error);
+    const start =
+      pageIndex * linesPerPage;
 
-    alert(
-      'สร้าง PDF ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง'
-    );
+
+    const pageLines =
+      wrappedLines.slice(
+        start,
+        start + linesPerPage
+      );
+
+
+    const row1 =
+      pageLines.slice(
+        0,
+        linesPerRow
+      );
+
+
+    const row2 =
+      pageLines.slice(
+        linesPerRow,
+        linesPerPage
+      );
+
+
+    const makeRow = (lines) => {
+
+      if(lines.length === 0){
+
+        return `
+          <div style="
+            flex:1;
+            border:1px solid #ddd;
+            border-radius:16px;
+            background:#fafafa;
+          "></div>
+        `;
+
+      }
+
+
+      return `
+        <div style="
+          flex:1;
+          border:1px solid #ddd;
+          border-radius:16px;
+          background:#fafafa;
+          padding:18px;
+          white-space:pre-wrap;
+          font-size:15px;
+          line-height:1.65;
+          overflow:hidden;
+        ">
+          ${escapeHTML(lines.join('\n'))}
+        </div>
+      `;
+
+    };
+
+
+    await createPDFPage(pdf,`
+
+      <div style="
+        border-bottom:4px solid #202124;
+        padding-bottom:16px;
+        margin-bottom:22px;
+      ">
+
+        <div style="
+          font-size:28px;
+          font-weight:800;
+        ">
+          รายละเอียดงาน
+        </div>
+
+        <div style="
+          color:#777;
+        ">
+          ${escapeHTML(jobName)}
+        </div>
+
+      </div>
+
+
+      <div style="
+        display:flex;
+        flex-direction:column;
+        gap:18px;
+        height:940px;
+      ">
+
+
+        <!-- แถวที่ 1 -->
+
+        <div style="
+          flex:1;
+          display:flex;
+          flex-direction:column;
+        ">
+
+          <div style="
+            font-size:16px;
+            font-weight:800;
+            margin-bottom:7px;
+          ">
+            รายละเอียด
+          </div>
+
+          ${makeRow(row1)}
+
+        </div>
+
+
+        <!-- แถวที่ 2 -->
+
+        <div style="
+          flex:1;
+          display:flex;
+          flex-direction:column;
+        ">
+
+          <div style="
+            font-size:16px;
+            font-weight:800;
+            margin-bottom:7px;
+          ">
+            รายละเอียดต่อ
+          </div>
+
+          ${makeRow(row2)}
+
+        </div>
+
+
+      </div>
+
+
+      <div style="
+        position:absolute;
+        bottom:35px;
+        left:42px;
+        right:42px;
+        border-top:1px solid #ddd;
+        padding-top:8px;
+        color:#999;
+        font-size:11px;
+        display:flex;
+        justify-content:space-between;
+      ">
+
+        <span>
+          Cost Calculator • ${escapeHTML(jobName)}
+        </span>
+
+        <span>
+          รายละเอียดหน้า ${pageIndex + 1}
+        </span>
+
+      </div>
+
+    `);
 
   }
 
 
-  report.remove();
+  // ==================================================
+  // SAVE
+  // ==================================================
+
+  let fileName =
+    jobName
+      .replace(/[\\/:*?"<>|]/g,'')
+      .trim();
+
+
+  if(!fileName)
+    fileName = 'งาน';
+
+
+  pdf.save(
+    `${fileName}.pdf`
+  );
 
 });
-
-
-// =========================
-// ป้องกัน HTML แปลก ๆ
-// =========================
-
-function escapeHTML(text){
-
-  return String(text)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;')
-    .replace(/'/g,'&#039;');
-
-}
